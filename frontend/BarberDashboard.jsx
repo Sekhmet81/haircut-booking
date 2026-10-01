@@ -325,27 +325,37 @@ function BarberDashboard({ user }) {
         </div>
       </div>
 
-      <h2>Today's Appointments</h2>
-
-      {!loading && !error && (
-        <div className="today-appointments">
-          {appointments.filter((appointment) => {
-            const appointmentDate = new Date(
-              appointment.appointment_date
-            ).toLocaleDateString("en-CA");
-
-            const today = new Date().toLocaleDateString("en-CA");
-
-            return (
-              appointmentDate === today && appointment.status !== "cancelled"
-            );
-          }).length === 0 ? (
-            <p className="no-today-appointments">
-              No appointments scheduled for today.
+      <div className="today-appointments-section">
+        <div className="today-appointments-header">
+          <div>
+            <h2>Today's Appointments</h2>
+            <p>
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
             </p>
-          ) : (
-            appointments
-              .filter((appointment) => {
+          </div>
+
+          {!loading && !error && (
+            <div className="today-appointment-count">
+              {
+                appointments.filter((appointment) => {
+                  const appointmentDate = new Date(
+                    appointment.appointment_date
+                  ).toLocaleDateString("en-CA");
+
+                  const today = new Date().toLocaleDateString("en-CA");
+
+                  return (
+                    appointmentDate === today &&
+                    appointment.status !== "cancelled"
+                  );
+                }).length
+              }{" "}
+              {appointments.filter((appointment) => {
                 const appointmentDate = new Date(
                   appointment.appointment_date
                 ).toLocaleDateString("en-CA");
@@ -356,25 +366,71 @@ function BarberDashboard({ user }) {
                   appointmentDate === today &&
                   appointment.status !== "cancelled"
                 );
-              })
-              .map((appointment) => (
-                <div key={appointment.id} className="today-appointment-card">
-                  <div className="today-appointment-time">
-                    {formatTime(appointment.start_time)}
-                    {" – "}
-                    {formatTime(appointment.end_time)}
-                  </div>
-
-                  <div className="today-appointment-details">
-                    <strong>{appointment.customer_name}</strong>
-
-                    <span>{appointment.service}</span>
-                  </div>
-                </div>
-              ))
+              }).length === 1
+                ? "appointment"
+                : "appointments"}
+            </div>
           )}
         </div>
-      )}
+
+        {!loading && !error && (
+          <div className="today-appointments">
+            {appointments.filter((appointment) => {
+              const appointmentDate = new Date(
+                appointment.appointment_date
+              ).toLocaleDateString("en-CA");
+
+              const today = new Date().toLocaleDateString("en-CA");
+
+              return (
+                appointmentDate === today && appointment.status !== "cancelled"
+              );
+            }).length === 0 ? (
+              <div className="no-today-appointments">
+                <div className="no-appointments-icon">✓</div>
+                <strong>No appointments scheduled</strong>
+                <span>Your schedule is clear for today.</span>
+              </div>
+            ) : (
+              appointments
+                .filter((appointment) => {
+                  const appointmentDate = new Date(
+                    appointment.appointment_date
+                  ).toLocaleDateString("en-CA");
+
+                  const today = new Date().toLocaleDateString("en-CA");
+
+                  return (
+                    appointmentDate === today &&
+                    appointment.status !== "cancelled"
+                  );
+                })
+                .sort((a, b) => a.start_time.localeCompare(b.start_time))
+                .map((appointment) => (
+                  <div key={appointment.id} className="today-appointment-card">
+                    <div className="today-appointment-time">
+                      <strong>{formatTime(appointment.start_time)}</strong>
+
+                      <span>{formatTime(appointment.end_time)}</span>
+                    </div>
+
+                    <div className="today-appointment-divider"></div>
+
+                    <div className="today-appointment-details">
+                      <strong>{appointment.customer_name}</strong>
+
+                      <span>{appointment.service}</span>
+                    </div>
+
+                    <div className="today-appointment-status">
+                      <span className="today-scheduled-badge">Scheduled</span>
+                    </div>
+                  </div>
+                ))
+            )}
+          </div>
+        )}
+      </div>
 
       {reschedulingAppointment && (
         <div className="reschedule-panel">
