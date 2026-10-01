@@ -1,0 +1,4 @@
+node_modules/
+.env
+create-admin.js
+create-barber.js
