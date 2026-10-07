@@ -7,6 +7,7 @@ function BarberDashboard({ user }) {
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [rescheduleTimeSlots, setRescheduleTimeSlots] = useState([]);
   const [rescheduleTime, setRescheduleTime] = useState("");
+  const [showPastAppointments, setShowPastAppointments] = useState(true);
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -237,20 +238,23 @@ function BarberDashboard({ user }) {
         throw new Error(data.error || "Failed to reschedule appointment.");
       }
 
+      const updatedAppointment = data.appointment;
+
       setAppointments((currentAppointments) =>
         currentAppointments.map((appointment) =>
           appointment.id === reschedulingAppointment.id
             ? {
                 ...appointment,
-                appointment_date: date,
-                start_time: time,
-                end_time: data.appointment.end_time,
+                appointment_date: updatedAppointment.appointment_date,
+                start_time: updatedAppointment.start_time,
+                end_time: updatedAppointment.end_time,
               }
             : appointment
         )
       );
 
       setReschedulingAppointment(null);
+      setRescheduleTime("");
 
       alert("Appointment rescheduled successfully.");
     } catch (error) {
@@ -283,6 +287,21 @@ function BarberDashboard({ user }) {
       minute: "2-digit",
     });
   };
+
+  const isAppointmentPast = (appointment) => {
+    const appointmentDate = appointment.appointment_date.slice(0, 10);
+    const appointmentTime = appointment.start_time.substring(0, 5);
+
+    const appointmentDateTime = new Date(
+      `${appointmentDate}T${appointmentTime}:00`
+    );
+
+    return appointmentDateTime <= new Date();
+  };
+
+  const visibleAppointments = appointments.filter(
+    (appointment) => showPastAppointments || !isAppointmentPast(appointment)
+  );
 
   return (
     <div className="admin-container">
@@ -506,13 +525,27 @@ function BarberDashboard({ user }) {
         </div>
       )}
 
-      <h2>My Appointments</h2>
+      <div className="my-appointments-header">
+        <h2>My Appointments</h2>
+
+        <label className="past-appointments-toggle">
+          <input
+            type="checkbox"
+            checked={!showPastAppointments}
+            onChange={() => setShowPastAppointments((current) => !current)}
+          />
+
+          <span className="toggle-slider"></span>
+
+          <span className="toggle-label">Hide past appointments</span>
+        </label>
+      </div>
 
       {loading && <p>Loading appointments...</p>}
 
       {error && <p className="login-error">{error}</p>}
 
-      {!loading && !error && appointments.length === 0 && (
+      {!loading && !error && visibleAppointments.length > 0 && (
         <p>No appointments found.</p>
       )}
 
@@ -534,7 +567,7 @@ function BarberDashboard({ user }) {
             </thead>
 
             <tbody>
-              {appointments.map((appointment) => (
+              {visibleAppointments.map((appointment) => (
                 <tr
                   key={appointment.id}
                   className={
@@ -574,33 +607,44 @@ function BarberDashboard({ user }) {
                         : "Cancelled"}
                     </span>
                   </td>
+
                   <td>
                     {appointment.status === "scheduled" && (
                       <div className="appointment-actions">
-                        <button
-                          className="reschedule-appointment-button"
-                          onClick={() => {
-                            setReschedulingAppointment(appointment);
+                        {!isAppointmentPast(appointment) && (
+                          <>
+                            <button
+                              className="reschedule-appointment-button"
+                              onClick={() => {
+                                setReschedulingAppointment(appointment);
 
-                            generateRescheduleTimeSlots(
-                              appointment,
-                              appointment.appointment_date.slice(0, 10)
-                            );
+                                generateRescheduleTimeSlots(
+                                  appointment,
+                                  appointment.appointment_date.slice(0, 10)
+                                );
 
-                            setRescheduleTime(
-                              appointment.start_time.substring(0, 5)
-                            );
-                          }}
-                        >
-                          Reschedule
-                        </button>
+                                setRescheduleTime(
+                                  appointment.start_time.substring(0, 5)
+                                );
+                              }}
+                            >
+                              Reschedule
+                            </button>
 
-                        <button
-                          className="cancel-appointment-button"
-                          onClick={() => cancelAppointment(appointment.id)}
-                        >
-                          Cancel
-                        </button>
+                            <button
+                              className="cancel-appointment-button"
+                              onClick={() => cancelAppointment(appointment.id)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+
+                        {isAppointmentPast(appointment) && (
+                          <span className="appointment-past-label">
+                            Past appointment
+                          </span>
+                        )}
                       </div>
                     )}
                   </td>
@@ -608,6 +652,26 @@ function BarberDashboard({ user }) {
               ))}
             </tbody>
           </table>
+
+          {!loading &&
+            !error &&
+            appointments.length > 0 &&
+            visibleAppointments.length === 0 && (
+              <div className="no-upcoming-appointments">
+                <div className="no-upcoming-icon">✓</div>
+
+                <strong>No upcoming appointments</strong>
+
+                <span>All past appointments are hidden.</span>
+
+                <button
+                  className="show-past-appointments-button"
+                  onClick={() => setShowPastAppointments(true)}
+                >
+                  Show Past Appointments
+                </button>
+              </div>
+            )}
         </div>
       )}
     </div>

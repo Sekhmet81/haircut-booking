@@ -38,6 +38,7 @@ function Admin() {
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [rescheduleTimeSlots, setRescheduleTimeSlots] = useState([]);
+  const [showPastAppointments, setShowPastAppointments] = useState(true);
 
   // =========================
   // LOAD BARBERS
@@ -672,6 +673,38 @@ function Admin() {
     return <p>Loading admin dashboard...</p>;
   }
 
+  const today = new Date().toLocaleDateString("en-CA");
+
+  const todayAppointments = appointments
+    .filter(
+      (appointment) =>
+        appointment.appointment_date.substring(0, 10) === today &&
+        appointment.status !== "cancelled"
+    )
+    .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+  const isAppointmentPast = (appointment) => {
+    const appointmentDate = appointment.appointment_date.slice(0, 10);
+    const appointmentTime = appointment.start_time.substring(0, 5);
+
+    const appointmentDateTime = new Date(
+      `${appointmentDate}T${appointmentTime}:00`
+    );
+
+    return appointmentDateTime <= new Date();
+  };
+
+  const visibleAppointments = appointments.filter((appointment) => {
+    const matchesDate =
+      !appointmentDate ||
+      appointment.appointment_date.substring(0, 10) === appointmentDate;
+
+    const matchesPastFilter =
+      showPastAppointments || !isAppointmentPast(appointment);
+
+    return matchesDate && matchesPastFilter;
+  });
+
   return (
     <div className="admin-container">
       <h1>Admin Dashboard</h1>
@@ -1071,13 +1104,87 @@ function Admin() {
         </div>
       )}
 
-      {/* =========================
-                APPOINTMENTS
-            ========================= */}
-
       {activeTab === "appointments" && (
         <div className="admin-card">
-          <h2>Appointments</h2>
+          <div className="today-appointments-section">
+            <div className="today-appointments-header">
+              <div>
+                <h2>Today's Appointments</h2>
+
+                <p>
+                  {new Date().toLocaleDateString("en-US", {
+                    weekday: "long",
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
+                </p>
+              </div>
+
+              <span className="today-appointment-count">
+                {todayAppointments.length}{" "}
+                {todayAppointments.length === 1
+                  ? "appointment"
+                  : "appointments"}
+              </span>
+            </div>
+
+            {todayAppointments.length > 0 ? (
+              <div className="today-appointments">
+                {todayAppointments.map((appointment) => (
+                  <div className="today-appointment-card" key={appointment.id}>
+                    <div className="today-appointment-time">
+                      <strong>
+                        {formatTime(appointment.start_time.substring(0, 5))}
+                      </strong>
+
+                      <span>
+                        {formatTime(appointment.end_time.substring(0, 5))}
+                      </span>
+                    </div>
+
+                    <div className="today-appointment-divider"></div>
+
+                    <div className="today-appointment-details">
+                      <strong>{appointment.customer_name}</strong>
+
+                      <span>{appointment.service}</span>
+
+                      <span>Barber: {appointment.barber}</span>
+                    </div>
+
+                    <div className="today-appointment-status">
+                      <span className="today-scheduled-badge">Scheduled</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-today-appointments">
+                <div className="no-appointments-icon">✓</div>
+
+                <strong>No appointments today</strong>
+
+                <span>There are no scheduled appointments for today.</span>
+              </div>
+            )}
+          </div>
+
+          <div className="my-appointments-header">
+            <h2>Appointments</h2>
+
+            <label className="past-appointments-toggle">
+              <input
+                type="checkbox"
+                checked={!showPastAppointments}
+                onChange={() => setShowPastAppointments((current) => !current)}
+              />
+
+              <span className="toggle-slider"></span>
+
+              <span className="toggle-label">Hide past appointments</span>
+            </label>
+          </div>
 
           <div className="appointment-filter">
             <label>
@@ -1093,180 +1200,197 @@ function Admin() {
           </div>
 
           <div className="appointment-list">
-            {appointments
-              .filter(
-                (appointment) =>
-                  !appointmentDate ||
-                  appointment.appointment_date.substring(0, 10) ===
-                    appointmentDate
-              )
-              .map((appointment) => {
-                const startTime = appointment.start_time.substring(0, 5);
-                const endTime = appointment.end_time.substring(0, 5);
+            {visibleAppointments.map((appointment) => {
+              const startTime = appointment.start_time.substring(0, 5);
+              const endTime = appointment.end_time.substring(0, 5);
 
-                return (
-                  <div className="appointment-row" key={appointment.id}>
-                    <div className="appointment-date">
-                      <strong>
-                        {appointment.appointment_date.substring(0, 10)}
-                      </strong>
+              return (
+                <div className="appointment-row" key={appointment.id}>
+                  <div className="appointment-date">
+                    <strong>
+                      {appointment.appointment_date.substring(0, 10)}
+                    </strong>
 
-                      <span>
-                        {startTime} - {endTime}
-                      </span>
-                    </div>
+                    <span>
+                      {startTime} - {endTime}
+                    </span>
+                  </div>
 
-                    <div className="appointment-customer">
-                      <strong>{appointment.customer_name}</strong>
+                  <div className="appointment-customer">
+                    <strong>{appointment.customer_name}</strong>
 
-                      {appointment.customer_phone && (
-                        <span>{appointment.customer_phone}</span>
-                      )}
+                    {appointment.customer_phone && (
+                      <span>{appointment.customer_phone}</span>
+                    )}
 
-                      {appointment.customer_email && (
-                        <span>{appointment.customer_email}</span>
-                      )}
-                    </div>
+                    {appointment.customer_email && (
+                      <span>{appointment.customer_email}</span>
+                    )}
+                  </div>
 
-                    <div className="appointment-service">
-                      <strong>{appointment.service}</strong>
+                  <div className="appointment-service">
+                    <strong>{appointment.service}</strong>
 
-                      <span>Barber: {appointment.barber}</span>
+                    <span>Barber: {appointment.barber}</span>
 
-                      <span>${Number(appointment.price).toFixed(2)}</span>
+                    <span>${Number(appointment.price).toFixed(2)}</span>
 
-                      <span
-                        className={`appointment-status ${appointment.status}`}
-                      >
-                        {appointment.status === "cancelled"
-                          ? "Cancelled"
-                          : "Scheduled"}
-                      </span>
+                    <span
+                      className={`appointment-status ${appointment.status}`}
+                    >
+                      {appointment.status === "cancelled"
+                        ? "Cancelled"
+                        : "Scheduled"}
+                    </span>
 
-                      {appointment.status === "scheduled" && (
-                        <>
-                          <button
-                            className="reschedule-appointment-button"
-                            onClick={() => {
-                              setReschedulingAppointmentId(appointment.id);
+                    {appointment.status === "scheduled" && (
+                      <div className="appointment-actions">
+                        {!isAppointmentPast(appointment) && (
+                          <>
+                            <button
+                              className="reschedule-appointment-button"
+                              onClick={() => {
+                                setReschedulingAppointmentId(appointment.id);
 
-                              const currentDate =
-                                appointment.appointment_date.substring(0, 10);
+                                const currentDate =
+                                  appointment.appointment_date.substring(0, 10);
 
-                              setRescheduleDate(currentDate);
+                                setRescheduleDate(currentDate);
 
-                              setRescheduleTime(
-                                appointment.start_time.substring(0, 5)
-                              );
-
-                              generateRescheduleTimeSlots(
-                                appointment,
-                                currentDate
-                              );
-                            }}
-                          >
-                            Reschedule
-                          </button>
-
-                          <button
-                            className="cancel-appointment-button"
-                            onClick={() => cancelAppointment(appointment.id)}
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      )}
-                      {reschedulingAppointmentId === appointment.id && (
-                        <div className="reschedule-form">
-                          <label>
-                            New Date
-                            <input
-                              type="date"
-                              value={rescheduleDate}
-                              onChange={(e) => {
-                                const newDate = e.target.value;
-
-                                setRescheduleDate(newDate);
-                                setRescheduleTime("");
-
-                                const appointment = appointments.find(
-                                  (appointment) =>
-                                    appointment.id === reschedulingAppointmentId
+                                setRescheduleTime(
+                                  appointment.start_time.substring(0, 5)
                                 );
 
-                                if (appointment) {
-                                  generateRescheduleTimeSlots(
-                                    appointment,
-                                    newDate
-                                  );
-                                }
+                                generateRescheduleTimeSlots(
+                                  appointment,
+                                  currentDate
+                                );
                               }}
-                            />
-                          </label>
+                            >
+                              Reschedule
+                            </button>
 
-                          <label>
-                            New Time
-                            <div className="reschedule-time-slots">
-                              {rescheduleTimeSlots.length === 0 ? (
-                                <span className="no-reschedule-times">
-                                  No available times
-                                </span>
-                              ) : (
-                                rescheduleTimeSlots.map((slot) => (
-                                  <button
-                                    type="button"
-                                    key={slot.startTime}
-                                    className={
-                                      rescheduleTime === slot.startTime
-                                        ? "reschedule-time-slot selected"
-                                        : "reschedule-time-slot"
-                                    }
-                                    onClick={() =>
-                                      setRescheduleTime(slot.startTime)
-                                    }
-                                  >
-                                    {formatTime(slot.startTime)}
-                                  </button>
-                                ))
-                              )}
-                            </div>
-                          </label>
-
-                          <div className="reschedule-actions">
                             <button
-                              className="save-reschedule-button"
-                              onClick={() =>
-                                rescheduleAppointment(appointment.id)
+                              className="cancel-appointment-button"
+                              onClick={() => cancelAppointment(appointment.id)}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        )}
+
+                        {isAppointmentPast(appointment) && (
+                          <span className="appointment-past-label">
+                            Past appointment
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {reschedulingAppointmentId === appointment.id && (
+                      <div className="reschedule-form">
+                        <label>
+                          New Date
+                          <input
+                            type="date"
+                            value={rescheduleDate}
+                            onChange={(e) => {
+                              const newDate = e.target.value;
+
+                              setRescheduleDate(newDate);
+                              setRescheduleTime("");
+
+                              const appointment = appointments.find(
+                                (appointment) =>
+                                  appointment.id === reschedulingAppointmentId
+                              );
+
+                              if (appointment) {
+                                generateRescheduleTimeSlots(
+                                  appointment,
+                                  newDate
+                                );
                               }
-                            >
-                              Save Reschedule
-                            </button>
+                            }}
+                          />
+                        </label>
 
-                            <button
-                              className="cancel-reschedule-button"
-                              onClick={() => {
-                                setReschedulingAppointmentId(null);
-                                setRescheduleDate("");
-                                setRescheduleTime("");
-                              }}
-                            >
-                              Never Mind
-                            </button>
+                        <label>
+                          New Time
+                          <div className="reschedule-time-slots">
+                            {rescheduleTimeSlots.length === 0 ? (
+                              <span className="no-reschedule-times">
+                                No available times
+                              </span>
+                            ) : (
+                              rescheduleTimeSlots.map((slot) => (
+                                <button
+                                  type="button"
+                                  key={slot.startTime}
+                                  className={
+                                    rescheduleTime === slot.startTime
+                                      ? "reschedule-time-slot selected"
+                                      : "reschedule-time-slot"
+                                  }
+                                  onClick={() =>
+                                    setRescheduleTime(slot.startTime)
+                                  }
+                                >
+                                  {formatTime(slot.startTime)}
+                                </button>
+                              ))
+                            )}
                           </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+                        </label>
 
-            {appointments.filter(
-              (appointment) =>
-                !appointmentDate ||
-                appointment.appointment_date.substring(0, 10) ===
-                  appointmentDate
-            ).length === 0 && (
-              <p className="no-appointments">No appointments found.</p>
+                        <div className="reschedule-actions">
+                          <button
+                            className="save-reschedule-button"
+                            onClick={() =>
+                              rescheduleAppointment(appointment.id)
+                            }
+                          >
+                            Save Reschedule
+                          </button>
+
+                          <button
+                            className="cancel-reschedule-button"
+                            onClick={() => {
+                              setReschedulingAppointmentId(null);
+                              setRescheduleDate("");
+                              setRescheduleTime("");
+                            }}
+                          >
+                            Never Mind
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            {visibleAppointments.length === 0 && (
+              <div className="no-upcoming-appointments">
+                <div className="no-upcoming-icon">✓</div>
+
+                <strong>No appointments found</strong>
+
+                <span>
+                  {appointmentDate
+                    ? "There are no matching appointments for this date."
+                    : "All past appointments are hidden."}
+                </span>
+
+                {!showPastAppointments && (
+                  <button
+                    className="show-past-appointments-button"
+                    onClick={() => setShowPastAppointments(true)}
+                  >
+                    Show Past Appointments
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
