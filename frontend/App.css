@@ -607,16 +607,39 @@ main {
 
 .appointment-row {
   display: grid;
-  grid-template-columns: 160px 1fr 1fr;
-  gap: 25px;
-  padding: 20px 0;
-  border-bottom: 1px solid #ddd;
+  grid-template-columns: minmax(170px, 0.9fr) minmax(200px, 1.2fr) minmax(
+      190px,
+      1fr
+    );
+  gap: 24px;
+  align-items: stretch;
+
+  padding: 20px;
+  margin-bottom: 12px;
+
+  background: white;
+  border: 1px solid #e1e1e1;
+  border-radius: 10px;
+
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
+
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.appointment-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .appointment-date {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+}
+
+.appointment-date strong {
+  font-size: 15px;
+  color: #222;
+  line-height: 1.4;
 }
 
 .appointment-date span,
@@ -628,9 +651,9 @@ main {
 
 .appointment-customer,
 .appointment-service {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
+  position: relative;
+  padding-left: 24px;
+  border-left: 1px solid #eee;
 }
 
 .no-appointments {
@@ -1284,10 +1307,6 @@ main {
     gap: 12px;
   }
 
-  .today-appointment-card {
-    padding: 15px;
-  }
-
   .today-appointment-time {
     min-width: 82px;
   }
@@ -1300,8 +1319,24 @@ main {
     margin: 0 12px;
   }
 
+  .today-appointment-card {
+    flex-wrap: wrap;
+    padding: 15px;
+    gap: 12px;
+  }
+
+  .today-appointment-details {
+    min-width: 0;
+  }
+
   .today-appointment-status {
-    display: none;
+    display: flex;
+    align-items: center;
+    margin-left: 0;
+  }
+
+  .today-scheduled-badge {
+    white-space: nowrap;
   }
 }
 
@@ -1435,4 +1470,219 @@ main {
 
 .show-past-appointments-button:hover {
   background-color: #222;
+}
+
+.appointment-customer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.appointment-customer strong {
+  font-size: 15px;
+  color: #222;
+}
+
+.appointment-contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.appointment-contact-info span {
+  font-size: 13px;
+  color: #777;
+}
+
+.appointment-time-range {
+  margin-top: 5px;
+  font-size: 13px;
+  color: #666;
+}
+
+.appointment-service {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.appointment-service-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.appointment-service-info strong {
+  font-size: 15px;
+  color: #222;
+}
+
+.appointment-barber {
+  font-size: 13px;
+  color: #666;
+}
+
+.appointment-price {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.appointment-status-area {
+  display: flex;
+  align-items: center;
+}
+
+.appointment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 800px) {
+  .appointment-row {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .appointment-customer,
+  .appointment-service {
+    padding-left: 0;
+    padding-top: 16px;
+
+    border-left: none;
+    border-top: 1px solid #eee;
+  }
+}
+
+.appointment-row > .reschedule-form {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  box-sizing: border-box;
+
+  margin-top: 4px;
+  padding: 20px;
+
+  background: #f8f8f8;
+  border: 1px solid #e1e1e1;
+  border-radius: 8px;
+}
+
+/* Mobile appointments hidden on desktop */
+.mobile-appointments {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  /* Hide the wide desktop table */
+  .appointments-table-wrapper {
+    display: none;
+  }
+
+  /* Show mobile appointment cards */
+  .mobile-appointments {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .mobile-appointment-card {
+    padding: 18px;
+    background: white;
+    border: 1px solid #e1e1e1;
+    border-radius: 10px;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.05);
+    min-width: 0;
+  }
+
+  .mobile-appointment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .mobile-appointment-header strong {
+    font-size: 14px;
+    color: #333;
+  }
+
+  .mobile-appointment-time {
+    margin-top: 12px;
+    font-size: 18px;
+    font-weight: 700;
+    color: #222;
+  }
+
+  .mobile-appointment-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid #eee;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-appointment-details strong {
+    font-size: 16px;
+    color: #222;
+  }
+
+  .mobile-appointment-details span {
+    font-size: 13px;
+    color: #666;
+  }
+
+  .mobile-appointment-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .mobile-appointment-actions button {
+    flex: 1;
+    min-width: 110px;
+  }
+}
+
+.reschedule-table-row td {
+  padding: 0 12px 16px;
+  border-bottom: 1px solid #e1e1e1;
+}
+
+.reschedule-table-row .reschedule-panel {
+  margin: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.mobile-appointment-item {
+  min-width: 0;
+}
+
+@media (max-width: 600px) {
+  .mobile-appointment-item {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .mobile-appointment-item .reschedule-panel {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    box-sizing: border-box;
+  }
+
+  .mobile-appointment-item .reschedule-time-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }

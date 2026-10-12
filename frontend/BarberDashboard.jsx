@@ -1,4 +1,97 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
+
+function ReschedulePanel({
+  appointment,
+  formatTime,
+  rescheduleTime,
+  rescheduleTimeSlots,
+  setRescheduleTime,
+  generateRescheduleTimeSlots,
+  rescheduleAppointment,
+  setReschedulingAppointment,
+}) {
+  const now = new Date();
+
+  const today =
+    `${now.getFullYear()}-` +
+    `${String(now.getMonth() + 1).padStart(2, "0")}-` +
+    `${String(now.getDate()).padStart(2, "0")}`;
+
+  return (
+    <div className="reschedule-panel">
+      <h2>Reschedule Appointment</h2>
+
+      <p>
+        Rescheduling appointment for{" "}
+        <strong>{appointment.customer_name}</strong>
+      </p>
+
+      <div className="reschedule-form">
+        <label>
+          New Date
+          <input
+            type="date"
+            min={today}
+            defaultValue={appointment.appointment_date.slice(0, 10)}
+            onChange={(event) => {
+              const newDate = event.target.value;
+
+              if (newDate < today) {
+                setRescheduleTime("");
+                return;
+              }
+
+              setRescheduleTime("");
+              generateRescheduleTimeSlots(appointment, newDate);
+            }}
+          />
+        </label>
+
+        <label>
+          New Time
+          <div className="reschedule-time-slots">
+            {rescheduleTimeSlots.length === 0 ? (
+              <span className="no-reschedule-times">No available times</span>
+            ) : (
+              rescheduleTimeSlots.map((slot) => (
+                <button
+                  type="button"
+                  key={slot.startTime}
+                  className={
+                    rescheduleTime === slot.startTime
+                      ? "reschedule-time-slot selected"
+                      : "reschedule-time-slot"
+                  }
+                  onClick={() => setRescheduleTime(slot.startTime)}
+                >
+                  {formatTime(slot.startTime)}
+                </button>
+              ))
+            )}
+          </div>
+        </label>
+
+        <div className="reschedule-form-actions">
+          <button
+            type="button"
+            className="save-reschedule-button"
+            onClick={rescheduleAppointment}
+          >
+            Save Reschedule
+          </button>
+
+          <button
+            type="button"
+            className="cancel-reschedule-button"
+            onClick={() => setReschedulingAppointment(null)}
+          >
+            Never Mind
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function BarberDashboard({ user }) {
   const [appointments, setAppointments] = useState([]);
@@ -7,7 +100,7 @@ function BarberDashboard({ user }) {
   const [reschedulingAppointment, setReschedulingAppointment] = useState(null);
   const [rescheduleTimeSlots, setRescheduleTimeSlots] = useState([]);
   const [rescheduleTime, setRescheduleTime] = useState("");
-  const [showPastAppointments, setShowPastAppointments] = useState(true);
+  const [showPastAppointments, setShowPastAppointments] = useState(false);
 
   useEffect(() => {
     const loadAppointments = async () => {
@@ -78,11 +171,21 @@ function BarberDashboard({ user }) {
   };
 
   const generateRescheduleTimeSlots = async (appointment, date) => {
-    if (!date) {
+    const now = new Date();
+
+    const today =
+      `${now.getFullYear()}-` +
+      `${String(now.getMonth() + 1).padStart(2, "0")}-` +
+      `${String(now.getDate()).padStart(2, "0")}`;
+
+    if (!date || date < today) {
       setRescheduleTimeSlots([]);
       setRescheduleTime("");
       return;
     }
+
+    const isToday = date === today;
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
     try {
       const response = await fetch(
@@ -143,6 +246,9 @@ function BarberDashboard({ user }) {
         minutes + duration <= closingMinutes;
         minutes += 30
       ) {
+        if (isToday && minutes <= currentMinutes) {
+          continue;
+        }
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
 
@@ -451,93 +557,19 @@ function BarberDashboard({ user }) {
         )}
       </div>
 
-      {reschedulingAppointment && (
-        <div className="reschedule-panel">
-          <h2>Reschedule Appointment</h2>
-
-          <p>
-            Rescheduling appointment for{" "}
-            <strong>{reschedulingAppointment.customer_name}</strong>
-          </p>
-
-          <div className="reschedule-form">
-            <label>
-              New Date
-              <input
-                type="date"
-                defaultValue={reschedulingAppointment.appointment_date.slice(
-                  0,
-                  10
-                )}
-                onChange={(event) => {
-                  const newDate = event.target.value;
-
-                  setRescheduleTime("");
-                  generateRescheduleTimeSlots(reschedulingAppointment, newDate);
-                }}
-              />
-            </label>
-
-            <label>
-              New Time
-              <div className="reschedule-time-slots">
-                {rescheduleTimeSlots.length === 0 ? (
-                  <span className="no-reschedule-times">
-                    No available times
-                  </span>
-                ) : (
-                  rescheduleTimeSlots.map((slot) => (
-                    <button
-                      type="button"
-                      key={slot.startTime}
-                      className={
-                        rescheduleTime === slot.startTime
-                          ? "reschedule-time-slot selected"
-                          : "reschedule-time-slot"
-                      }
-                      onClick={() => setRescheduleTime(slot.startTime)}
-                    >
-                      {formatTime(slot.startTime)}
-                    </button>
-                  ))
-                )}
-              </div>
-            </label>
-
-            <div className="reschedule-form-actions">
-              <button
-                type="button"
-                className="save-reschedule-button"
-                onClick={rescheduleAppointment}
-              >
-                Save Reschedule
-              </button>
-
-              <button
-                type="button"
-                className="cancel-reschedule-button"
-                onClick={() => setReschedulingAppointment(null)}
-              >
-                Never Mind
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="my-appointments-header">
         <h2>My Appointments</h2>
 
         <label className="past-appointments-toggle">
           <input
             type="checkbox"
-            checked={!showPastAppointments}
+            checked={showPastAppointments}
             onChange={() => setShowPastAppointments((current) => !current)}
           />
 
           <span className="toggle-slider"></span>
 
-          <span className="toggle-label">Hide past appointments</span>
+          <span className="toggle-label">Show past appointments</span>
         </label>
       </div>
 
@@ -545,7 +577,7 @@ function BarberDashboard({ user }) {
 
       {error && <p className="login-error">{error}</p>}
 
-      {!loading && !error && visibleAppointments.length > 0 && (
+      {!loading && !error && visibleAppointments.length === 0 && (
         <p>No appointments found.</p>
       )}
 
@@ -568,87 +600,112 @@ function BarberDashboard({ user }) {
 
             <tbody>
               {visibleAppointments.map((appointment) => (
-                <tr
-                  key={appointment.id}
-                  className={
-                    appointment.status === "cancelled"
-                      ? "appointment-cancelled"
-                      : ""
-                  }
-                >
-                  <td>{formatDate(appointment.appointment_date)}</td>
+                <Fragment key={appointment.id}>
+                  <tr
+                    key={appointment.id}
+                    className={
+                      appointment.status === "cancelled"
+                        ? "appointment-cancelled"
+                        : ""
+                    }
+                  >
+                    <td>{formatDate(appointment.appointment_date)}</td>
 
-                  <td>
-                    <strong>{formatTime(appointment.start_time)}</strong>
+                    <td>
+                      <strong>{formatTime(appointment.start_time)}</strong>
 
-                    {" – "}
+                      {" – "}
 
-                    {formatTime(appointment.end_time)}
-                  </td>
+                      {formatTime(appointment.end_time)}
+                    </td>
 
-                  <td>
-                    <strong>{appointment.customer_name}</strong>
-                  </td>
+                    <td>
+                      <strong>{appointment.customer_name}</strong>
+                    </td>
 
-                  <td>{appointment.customer_phone || "-"}</td>
+                    <td>{appointment.customer_phone || "-"}</td>
 
-                  <td>{appointment.customer_email || "-"}</td>
+                    <td>{appointment.customer_email || "-"}</td>
 
-                  <td>{appointment.service}</td>
+                    <td>{appointment.service}</td>
 
-                  <td>${appointment.price}</td>
+                    <td>${appointment.price}</td>
 
-                  <td>
-                    <span
-                      className={`appointment-status ${appointment.status}`}
-                    >
-                      {appointment.status === "scheduled"
-                        ? "Scheduled"
-                        : "Cancelled"}
-                    </span>
-                  </td>
+                    <td>
+                      <span
+                        className={`appointment-status ${appointment.status}`}
+                      >
+                        {appointment.status === "scheduled"
+                          ? "Scheduled"
+                          : "Cancelled"}
+                      </span>
+                    </td>
 
-                  <td>
-                    {appointment.status === "scheduled" && (
-                      <div className="appointment-actions">
-                        {!isAppointmentPast(appointment) && (
-                          <>
-                            <button
-                              className="reschedule-appointment-button"
-                              onClick={() => {
-                                setReschedulingAppointment(appointment);
+                    <td>
+                      {appointment.status === "scheduled" && (
+                        <div className="appointment-actions">
+                          {!isAppointmentPast(appointment) && (
+                            <>
+                              <button
+                                className="reschedule-appointment-button"
+                                onClick={() => {
+                                  setReschedulingAppointment(appointment);
 
-                                generateRescheduleTimeSlots(
-                                  appointment,
-                                  appointment.appointment_date.slice(0, 10)
-                                );
+                                  generateRescheduleTimeSlots(
+                                    appointment,
+                                    appointment.appointment_date.slice(0, 10)
+                                  );
 
-                                setRescheduleTime(
-                                  appointment.start_time.substring(0, 5)
-                                );
-                              }}
-                            >
-                              Reschedule
-                            </button>
+                                  setRescheduleTime(
+                                    appointment.start_time.substring(0, 5)
+                                  );
+                                }}
+                              >
+                                Reschedule
+                              </button>
 
-                            <button
-                              className="cancel-appointment-button"
-                              onClick={() => cancelAppointment(appointment.id)}
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        )}
+                              <button
+                                className="cancel-appointment-button"
+                                onClick={() =>
+                                  cancelAppointment(appointment.id)
+                                }
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
 
-                        {isAppointmentPast(appointment) && (
-                          <span className="appointment-past-label">
-                            Past appointment
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </td>
-                </tr>
+                          {isAppointmentPast(appointment) && (
+                            <span className="appointment-past-label">
+                              Past appointment
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+
+                  {reschedulingAppointment?.id === appointment.id && (
+                    <tr className="reschedule-table-row">
+                      <td colSpan={9}>
+                        <ReschedulePanel
+                          appointment={appointment}
+                          formatTime={formatTime}
+                          rescheduleTime={rescheduleTime}
+                          rescheduleTimeSlots={rescheduleTimeSlots}
+                          setRescheduleTime={setRescheduleTime}
+                          generateRescheduleTimeSlots={
+                            generateRescheduleTimeSlots
+                          }
+                          rescheduleAppointment={rescheduleAppointment}
+                          setReschedulingAppointment={
+                            setReschedulingAppointment
+                          }
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -672,6 +729,104 @@ function BarberDashboard({ user }) {
                 </button>
               </div>
             )}
+        </div>
+      )}
+
+      {!loading && !error && visibleAppointments.length > 0 && (
+        <div className="mobile-appointments">
+          {visibleAppointments.map((appointment) => (
+            <div key={appointment.id} className="mobile-appoinmtent-item">
+              <div
+                className={`mobile-appointment-card ${
+                  appointment.status === "cancelled"
+                    ? "appointment-cancelled"
+                    : ""
+                }`}
+                key={appointment.id}
+              >
+                <div className="mobile-appointment-header">
+                  <strong>{formatDate(appointment.appointment_date)}</strong>
+
+                  <span className={`appointment-status ${appointment.status}`}>
+                    {appointment.status === "scheduled"
+                      ? "Scheduled"
+                      : "Cancelled"}
+                  </span>
+                </div>
+
+                <div className="mobile-appointment-time">
+                  {formatTime(appointment.start_time)} –{" "}
+                  {formatTime(appointment.end_time)}
+                </div>
+
+                <div className="mobile-appointment-details">
+                  <strong>{appointment.customer_name}</strong>
+
+                  <span>{appointment.service}</span>
+
+                  <span>${Number(appointment.price).toFixed(2)}</span>
+
+                  {appointment.customer_phone && (
+                    <span>{appointment.customer_phone}</span>
+                  )}
+
+                  {appointment.customer_email && (
+                    <span>{appointment.customer_email}</span>
+                  )}
+                </div>
+
+                {appointment.status === "scheduled" && (
+                  <div className="mobile-appointment-actions">
+                    {!isAppointmentPast(appointment) ? (
+                      <>
+                        <button
+                          className="reschedule-appointment-button"
+                          onClick={() => {
+                            setReschedulingAppointment(appointment);
+
+                            generateRescheduleTimeSlots(
+                              appointment,
+                              appointment.appointment_date.slice(0, 10)
+                            );
+
+                            setRescheduleTime(
+                              appointment.start_time.substring(0, 5)
+                            );
+                          }}
+                        >
+                          Reschedule
+                        </button>
+
+                        <button
+                          className="cancel-appointment-button"
+                          onClick={() => cancelAppointment(appointment.id)}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <span className="appointment-past-label">
+                        Past appointment
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {reschedulingAppointment?.id === appointment.id && (
+                <ReschedulePanel
+                  appointment={appointment}
+                  formatTime={formatTime}
+                  rescheduleTime={rescheduleTime}
+                  rescheduleTimeSlots={rescheduleTimeSlots}
+                  setRescheduleTime={setRescheduleTime}
+                  generateRescheduleTimeSlots={generateRescheduleTimeSlots}
+                  rescheduleAppointment={rescheduleAppointment}
+                  setReschedulingAppointment={setReschedulingAppointment}
+                />
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>

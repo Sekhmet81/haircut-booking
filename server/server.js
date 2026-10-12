@@ -2236,6 +2236,18 @@ app.put(
       });
     }
 
+    // Prevent rescheduling an appointment into the past
+    const requestedDateTime = new Date(`${appointment_date}T${start_time}`);
+
+    if (
+      Number.isNaN(requestedDateTime.getTime()) ||
+      requestedDateTime <= new Date()
+    ) {
+      return res.status(400).json({
+        error: "Appointments must be rescheduled to a future date and time",
+      });
+    }
+
     try {
       // Get the appointment and its service duration
       const appointmentResult = await pool.query(
